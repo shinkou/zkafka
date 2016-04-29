@@ -250,12 +250,22 @@ public abstract class AbstractConsumer
 	/**
 	 * stop consuming and processing kafka messages
 	 */
-	abstract public void stop();
+	public void stop()
+	{
+		for(final SimpleConsumer consumer: m_consumers.values())
+			consumer.close();
+
+		m_consumers.clear();
+		m_executor.shutdown();
+	}
 
 	/**
 	 * interrupt current kafka message consumption and processing
 	 */
-	abstract public void interrupt();
+	public void interrupt()
+	{
+		m_executor.shutdownNow();
+	}
 
 	/**
 	 * process kafka messages

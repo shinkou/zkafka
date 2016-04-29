@@ -150,8 +150,28 @@ public abstract class UntamedConsumer extends ZkConsumer
 						.clientId(m_clientnames.get(partition))
 						.addFetch(m_topic, partition, curOffset, m_fetchSize)
 						.build();
-					res = consumer.fetch(req);
 
+					// XXX:2016-04-28:Chun:workaround of the next if block
+					try
+					{
+						res = consumer.fetch(req);
+					}
+					catch(Exception e)
+					{
+						System.err.println
+						(
+							"Errors detected while fetching.  Details follow."
+						);
+						e.printStackTrace(System.err);
+
+						consumer.close();
+						consumer = connectKafka(partition);
+						m_consumers.put(partition, consumer);
+
+						continue;
+					}
+
+					// FIXME:2016-04-28:Chun:not work with disconnection??
 					if (res.hasError())
 					{
 						if

@@ -1,5 +1,6 @@
 libzkafka
 =========
+A library for zookeeper enabled kafka access.
 
 How to Compile
 --------------
