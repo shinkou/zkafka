@@ -25,8 +25,6 @@ import scala.collection.JavaConversions;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.utils.Json;
 
-import org.apache.kafka.common.KafkaException;
-
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkException;
 
@@ -178,18 +176,11 @@ public abstract class ZkConsumer extends AbstractConsumer
 		String sJson = m_zkClient.<String>readData(sPath);
 		Map<String, Object> brokerinfo = null;
 
-		try
-		{
-			brokerinfo = JavaConversions.<String, Object>mapAsJavaMap
-			(
-				(scala.collection.Map<String, Object>)
-					Json.parseFull(sJson).get()
-			);
-		}
-		catch(KafkaException e)
-		{
-			e.printStackTrace();
-		}
+		brokerinfo = JavaConversions.<String, Object>mapAsJavaMap
+		(
+			(scala.collection.Map<String, Object>)
+				Json.parseFull(sJson).get()
+		);
 
 		return brokerinfo;
 	}
@@ -218,20 +209,13 @@ public abstract class ZkConsumer extends AbstractConsumer
 		Map<String, Object> leaderinfo = null;
 		Map<String, Object> brokerinfo = null;
 
-		try
-		{
-			leaderinfo = JavaConversions.<String, Object>mapAsJavaMap
-			(
-				(scala.collection.Map<String, Object>)
-					Json.parseFull(sLeader).get()
-			);
+		leaderinfo = JavaConversions.<String, Object>mapAsJavaMap
+		(
+			(scala.collection.Map<String, Object>)
+				Json.parseFull(sLeader).get()
+		);
 
-			brokerinfo = loadBrokerAddress((Integer) leaderinfo.get("leader"));
-		}
-		catch(KafkaException e)
-		{
-			e.printStackTrace();
-		}
+		brokerinfo = loadBrokerAddress((Integer) leaderinfo.get("leader"));
 
 		return brokerinfo;
 	}

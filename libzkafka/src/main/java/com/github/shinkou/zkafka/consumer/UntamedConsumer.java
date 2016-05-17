@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import kafka.api.FetchRequest;
 import kafka.api.FetchRequestBuilder;
 import kafka.common.ErrorMapping;
+import kafka.common.KafkaException;
 import kafka.javaapi.FetchResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.message.MessageAndOffset;
@@ -146,68 +147,97 @@ public abstract class UntamedConsumer extends ZkConsumer
 				whileloop:
 				while(m_maxRead > cntRead.get() || 0 >= m_maxRead)
 				{
+					if (null == consumer)
+					{
+						logger.info
+						(
+							"Reconnecting to Kafka for partition "
+								+ partition + "."
+						);
+
+						try
+						{
+							consumer = connectKafka(partition);
+						}
+						catch(KafkaException ke)
+						{
+							logger.warn
+							(
+								"Retry in " + getKafkaReconnectWait()
+									+ " ms."
+								, ke
+							);
+
+							try
+							{
+								Thread.sleep(getKafkaReconnectWait());
+							}
+							catch(InterruptedException ie)
+							{
+								logger.warn(ie);
+							}
+
+							continue;
+						}
+
+						m_consumers.put(partition, consumer);
+					}
+
 					req = new FetchRequestBuilder()
 						.clientId(m_clientnames.get(partition))
 						.addFetch(m_topic, partition, curOffset, m_fetchSize)
 						.build();
 
-					// XXX:2016-04-28:Chun:workaround of the next if block
 					try
 					{
 						res = consumer.fetch(req);
+
+						// FIXME:2016-04-28:Chun:not work with disconnection??
+						if (res.hasError())
+						{
+							if
+							(
+								res.errorCode(m_topic, partition)
+									== ErrorMapping.OffsetOutOfRangeCode()
+							)
+							{
+								logger.warn
+								(
+									"Invalid offset: " + curOffset
+								);
+
+								curOffset = getOffsetBefore
+								(
+									partition
+									, m_timestamp
+								);
+
+								logger.info
+								(
+									"Valid offset obtained: " + curOffset
+								);
+							}
+							else
+							{
+								logger.warn
+								(
+									"Errors detected in fetch response.  Code: "
+										+ res.errorCode(m_topic, partition)
+								);
+
+								consumer.close();
+								consumer = null;
+							}
+
+							continue;
+						}
 					}
 					catch(Exception e)
 					{
-						System.err.println
-						(
-							"Errors detected while fetching.  Details follow."
-						);
-						e.printStackTrace(System.err);
+						logger.warn("Errors detected while fetching.", e);
 
 						consumer.close();
-						consumer = connectKafka(partition);
-						m_consumers.put(partition, consumer);
-
-						continue;
-					}
-
-					// FIXME:2016-04-28:Chun:not work with disconnection??
-					if (res.hasError())
-					{
-						if
-						(
-							res.errorCode(m_topic, partition)
-								== ErrorMapping.OffsetOutOfRangeCode()
-						)
-						{
-							System.err.println
-							(
-								"Invalid offset: " + curOffset
-							);
-
-							curOffset = getOffsetBefore
-							(
-								partition
-								, m_timestamp
-							);
-
-							System.err.println
-							(
-								"Valid offset obtained: " + curOffset
-							);
-						}
-						else
-						{
-							System.err.println
-							(
-								"Errors detected in fetch response.  Code: "
-									+ res.errorCode(m_topic, partition)
-							);
-
-							consumer.close();
-							consumer = connectKafka(partition);
-							m_consumers.put(partition, consumer);
-						}
+						consumer = null;
 
 						continue;
 					}
@@ -227,7 +257,7 @@ public abstract class UntamedConsumer extends ZkConsumer
 
 						if (mao.offset() < curOffset)
 						{
-							System.err.println
+							logger.warn
 							(
 								"Found an old offset: " + mao.offset()
 									+ " Expecting: " + curOffset
@@ -243,6 +273,8 @@ public abstract class UntamedConsumer extends ZkConsumer
 						process(bytes);
 					}
 				}
+
+				if (null != consumer) consumer.close();
 			});
 		}
 	}

@@ -26,6 +26,9 @@ import kafka.javaapi.OffsetRequest;
 import kafka.javaapi.OffsetResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 /*
  * This is a class dedicated to consuming kafka messages
  */
@@ -35,13 +38,17 @@ public abstract class AbstractConsumer
 	final public static int FETCH_SIZE = 1024;
 	final public static long MAX_READ = 0L;
 	final public static int SO_TIMEOUT = 30000;
+	final public static long KAFKA_RECONNECT_WAIT = 1000L;
 
 	// C L A S S   M E M B E R S -------------------------------------------
+	protected Logger logger = LogManager.getLogger(getClass());
+
 	protected String m_groupId;
 	protected String m_topic;
 	protected int m_fetchSize;
 	protected long m_maxRead;
 	protected int m_soTimeout;
+	protected long m_kafkaReconnectWait;
 	protected ExecutorService m_executor;
 
 	// partition to consumer map
@@ -74,6 +81,7 @@ public abstract class AbstractConsumer
 		setFetchSize(FETCH_SIZE);
 		setMaxRead(MAX_READ);
 		setSoTimeout(SO_TIMEOUT);
+		setKafkaReconnectWait(KAFKA_RECONNECT_WAIT);
 
 		m_consumers = new HashMap<Integer, SimpleConsumer>();
 		m_clientnames = new HashMap<Integer, String>();
@@ -136,7 +144,13 @@ public abstract class AbstractConsumer
 	final protected long getOffsetBefore(int partition, long timestamp)
 	{
 		SimpleConsumer consumer = m_consumers.get(partition);
-		if (null == consumer) return 0L;
+		if (null == consumer)
+		{
+			throw new RuntimeException
+			(
+				"Consumer for partition \"" + partition + "\" disappeared!"
+			);
+		}
 
 		String clientname = getClientname(partition);
 
@@ -157,7 +171,7 @@ public abstract class AbstractConsumer
 
 		if (res.hasError())
 		{
-			System.err.println
+			logger.error
 			(
 				"Error fetching offset from broker. Reason: "
 					+ res.errorCode(m_topic, partition)
@@ -216,6 +230,15 @@ public abstract class AbstractConsumer
 	}
 
 	/**
+	 * get kafka reconnect wait interval
+	 * @return reconnect wait interval in milliseconds
+	 */
+	final public long getKafkaReconnectWait()
+	{
+		return m_kafkaReconnectWait;
+	}
+
+	/**
 	 * set fetch size
 	 * @param fetchSize number of kafka messages per fetch
 	 */
@@ -240,6 +263,15 @@ public abstract class AbstractConsumer
 	final public void setSoTimeout(int soTimeout)
 	{
 		m_soTimeout = soTimeout;
+	}
+
+	/**
+	 * set kafka reconnect wait interval
+	 * @param l kafka reconnect interval in milliseconds
+	 */
+	final public void setKafkaReconnectWait(long l)
+	{
+		m_kafkaReconnectWait = l;
 	}
 
 	/**
