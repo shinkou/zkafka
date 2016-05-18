@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Chun-Kwong Wong
+ * Copyright (C) 2016  Chun-Kwong Wong
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -145,7 +145,11 @@ public abstract class UntamedConsumer extends ZkConsumer
 				FetchRequest req = null;
 				FetchResponse res = null;
 				whileloop:
-				while(m_maxRead > cntRead.get() || 0 >= m_maxRead)
+				while
+				(
+					(m_maxRead > cntRead.get() || 0 >= m_maxRead)
+					&& ! m_executor.isShutdown()
+				)
 				{
 					if (null == consumer)
 					{
@@ -161,6 +165,8 @@ public abstract class UntamedConsumer extends ZkConsumer
 						}
 						catch(KafkaException ke)
 						{
+							if (m_executor.isShutdown()) break;
+
 							logger.warn
 							(
 								"Retry in " + getKafkaReconnectWait()
@@ -234,6 +240,8 @@ public abstract class UntamedConsumer extends ZkConsumer
 					}
 					catch(Exception e)
 					{
+						if (m_executor.isShutdown()) break;
+
 						logger.warn("Errors detected while fetching.", e);
 
 						consumer.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Chun-Kwong Wong
+ * Copyright (C) 2016  Chun-Kwong Wong
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,10 +65,9 @@ public class UntamedConsumerExample extends UntamedConsumer
 
 		Runtime.getRuntime().addShutdownHook
 		(
-			new Thread(() -> consumer.interrupt())
+			new Thread(() -> consumer.stop())
 		);
 
 		consumer.start();
-		consumer.stop();
 	}
 }

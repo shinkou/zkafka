@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Chun-Kwong Wong
+ * Copyright (C) 2016  Chun-Kwong Wong
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -280,23 +280,23 @@ public abstract class AbstractConsumer
 	abstract public void start();
 
 	/**
+	 * perform tasks before stopping consumers
+	 */
+	public void preStop() {}
+
+	/**
 	 * stop consuming and processing kafka messages
 	 */
 	public void stop()
 	{
+		m_executor.shutdown();
+
+		preStop();
+
 		for(final SimpleConsumer consumer: m_consumers.values())
 			consumer.close();
 
 		m_consumers.clear();
-		m_executor.shutdown();
-	}
-
-	/**
-	 * interrupt current kafka message consumption and processing
-	 */
-	public void interrupt()
-	{
-		m_executor.shutdownNow();
 	}
 
 	/**

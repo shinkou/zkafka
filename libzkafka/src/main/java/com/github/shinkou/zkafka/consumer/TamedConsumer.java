@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Chun-Kwong Wong
+ * Copyright (C) 2016  Chun-Kwong Wong
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -181,7 +181,11 @@ public abstract class TamedConsumer extends UntamedConsumer
 				FetchRequest req = null;
 				FetchResponse res = null;
 				whileloop:
-				while(m_maxRead > cntRead.get() || 0 >= m_maxRead)
+				while
+				(
+					(m_maxRead > cntRead.get() || 0 >= m_maxRead)
+					&& ! m_executor.isShutdown()
+				)
 				{
 					if (null == consumer)
 					{
@@ -198,6 +202,8 @@ public abstract class TamedConsumer extends UntamedConsumer
 						}
 						catch(KafkaException ke)
 						{
+							if (m_executor.isShutdown()) break;
+
 							logger.warn
 							(
 								"Retry in " + getKafkaReconnectWait()
@@ -269,6 +275,8 @@ public abstract class TamedConsumer extends UntamedConsumer
 					}
 					catch(Exception e)
 					{
+						if (m_executor.isShutdown()) break;
+
 						logger.warn("Errors detected while fetching.", e);
 
 						consumer.close();
@@ -328,13 +336,11 @@ public abstract class TamedConsumer extends UntamedConsumer
 	}
 
 	/**
-	 * interrupt current kafka message consumption and processing
+	 * perform tasks before stopping consumers
 	 */
 	@Override
-	public void interrupt()
+	public void preStop()
 	{
-		List<Runnable> runnables = m_executor.shutdownNow();
-
 		for(Map.Entry<Integer, Long> entry: m_offsets.entrySet())
 			saveOffset(entry.getKey(), entry.getValue());
 	}
