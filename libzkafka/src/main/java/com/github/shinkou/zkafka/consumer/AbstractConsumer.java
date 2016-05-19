@@ -50,6 +50,7 @@ public abstract class AbstractConsumer
 	protected int m_soTimeout;
 	protected long m_kafkaReconnectWait;
 	protected ExecutorService m_executor;
+	protected boolean m_shutdown;
 
 	// partition to consumer map
 	protected Map<Integer, SimpleConsumer> m_consumers;
@@ -82,6 +83,8 @@ public abstract class AbstractConsumer
 		setMaxRead(MAX_READ);
 		setSoTimeout(SO_TIMEOUT);
 		setKafkaReconnectWait(KAFKA_RECONNECT_WAIT);
+
+		m_shutdown = false;
 
 		m_consumers = new HashMap<Integer, SimpleConsumer>();
 		m_clientnames = new HashMap<Integer, String>();
@@ -287,16 +290,14 @@ public abstract class AbstractConsumer
 	/**
 	 * stop consuming and processing kafka messages
 	 */
-	public void stop()
+	final public void stop()
 	{
-		m_executor.shutdown();
+		m_shutdown = true;
 
 		preStop();
 
 		for(final SimpleConsumer consumer: m_consumers.values())
 			consumer.close();
-
-		m_consumers.clear();
 	}
 
 	/**

@@ -148,7 +148,7 @@ public abstract class UntamedConsumer extends ZkConsumer
 				while
 				(
 					(m_maxRead > cntRead.get() || 0 >= m_maxRead)
-					&& ! m_executor.isShutdown()
+					&& ! m_shutdown
 				)
 				{
 					if (null == consumer)
@@ -165,7 +165,7 @@ public abstract class UntamedConsumer extends ZkConsumer
 						}
 						catch(KafkaException ke)
 						{
-							if (m_executor.isShutdown()) break;
+							if (m_shutdown) break;
 
 							logger.warn
 							(
@@ -240,7 +240,7 @@ public abstract class UntamedConsumer extends ZkConsumer
 					}
 					catch(Exception e)
 					{
-						if (m_executor.isShutdown()) break;
+						if (m_shutdown) break;
 
 						logger.warn("Errors detected while fetching.", e);
 
@@ -285,5 +285,7 @@ public abstract class UntamedConsumer extends ZkConsumer
 				if (null != consumer) consumer.close();
 			});
 		}
+
+		m_executor.shutdown();
 	}
 }

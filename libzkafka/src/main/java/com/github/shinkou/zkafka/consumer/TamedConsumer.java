@@ -184,7 +184,7 @@ public abstract class TamedConsumer extends UntamedConsumer
 				while
 				(
 					(m_maxRead > cntRead.get() || 0 >= m_maxRead)
-					&& ! m_executor.isShutdown()
+					&& ! m_shutdown
 				)
 				{
 					if (null == consumer)
@@ -202,7 +202,7 @@ public abstract class TamedConsumer extends UntamedConsumer
 						}
 						catch(KafkaException ke)
 						{
-							if (m_executor.isShutdown()) break;
+							if (m_shutdown) break;
 
 							logger.warn
 							(
@@ -275,7 +275,7 @@ public abstract class TamedConsumer extends UntamedConsumer
 					}
 					catch(Exception e)
 					{
-						if (m_executor.isShutdown()) break;
+						if (m_shutdown) break;
 
 						logger.warn("Errors detected while fetching.", e);
 
@@ -333,6 +333,8 @@ public abstract class TamedConsumer extends UntamedConsumer
 				if (null != consumer) consumer.close();
 			});
 		}
+
+		m_executor.shutdown();
 	}
 
 	/**
