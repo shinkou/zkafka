@@ -50,7 +50,7 @@ public abstract class AbstractConsumer
 	protected int m_soTimeout;
 	protected long m_kafkaReconnectWait;
 	protected ExecutorService m_executor;
-	protected boolean m_shutdown;
+	protected volatile boolean m_shutdown;
 
 	// partition to consumer map
 	protected Map<Integer, SimpleConsumer> m_consumers;
