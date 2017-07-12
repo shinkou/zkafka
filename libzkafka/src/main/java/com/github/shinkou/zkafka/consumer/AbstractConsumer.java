@@ -302,7 +302,8 @@ public abstract class AbstractConsumer
 
 	/**
 	 * process kafka messages
+	 * @param partition the partition where the message comes from
 	 * @param bytes kafka message in the form of bytes
 	 */
-	abstract public void process(byte[] bytes);
+	abstract public void process(int partition, byte[] bytes);
 }

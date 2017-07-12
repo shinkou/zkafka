@@ -32,7 +32,7 @@ public class TamedConsumerExample extends TamedConsumer
 
 	// this is the only function we need to override in most cases
 	@Override
-	public void process(byte[] data)
+	public void process(int partition, byte[] data)
 	{
 		try
 		{

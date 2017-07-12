@@ -314,7 +314,7 @@ public abstract class TamedConsumer extends UntamedConsumer
 						ByteBuffer buf = mao.message().payload();
 						byte[] bytes = new byte[buf.limit()];
 						buf.get(bytes);
-						process(bytes);
+						process(partition, bytes);
 					}
 
 					if
